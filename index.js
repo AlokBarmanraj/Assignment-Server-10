@@ -31,6 +31,8 @@ async function run() {
     const manageScheduleCollection = database.collection("manageSchedule");
     const doctorProfileFormCollection =
       database.collection("doctorProfileForm");
+    const doctorAppointmentCollection =
+      database.collection("doctorAppointment");
 
     // Manage Schedule
     // Add Schedule
@@ -163,6 +165,20 @@ app.get("/api/findDoctors/:id",async(req,res)=>{
   const result = await doctorProfileFormCollection.findOne({_id: new ObjectId(id)})
   res.json(result)
 })
+
+
+// appointment
+app.post("/api/appointments", async (req, res) => {
+  const appointment = req.body;
+  const newAppointment ={
+    ...appointment,
+    createdAt: new Date(),
+  }
+
+  const result = await doctorAppointmentCollection.insertOne(newAppointment);
+
+  res.send(result);
+});
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
