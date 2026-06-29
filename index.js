@@ -180,6 +180,70 @@ app.post("/api/appointments", async (req, res) => {
   res.send(result);
 });
 
+// Appointment List
+// app.get("/api/appointmentRequests", async (req, res) => {
+//   const query = {};
+
+//   const result = await doctorAppointmentCollection
+//     .find(query)
+//     .toArray();
+
+//   res.send(result);
+// });
+app.get("/api/appointmentRequests", async (req, res) => {
+  const result = await doctorAppointmentCollection.find().toArray();
+  res.send(result);
+});
+
+
+// Accept and Reject
+app.patch("/api/appointmentRequests/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const filter = {
+      _id: new ObjectId(id),
+    };
+
+    const updateDoc = {
+      $set: {
+        status,
+        updatedAt: new Date(),
+      },
+    };
+
+    const result = await doctorAppointmentCollection.updateOne(
+      filter,
+      updateDoc
+    );
+
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Failed to update appointment status.",
+    });
+  }
+});
+// Completed
+
+app.get("/api/appointmentComplete", async (req, res) => {
+  try {
+    const result = await doctorAppointmentCollection
+      .find({ status: "completed" })
+      .toArray();
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({
+      message: "Failed to fetch completed appointments",
+    });
+  }
+});
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log(
