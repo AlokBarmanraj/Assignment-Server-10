@@ -21,6 +21,15 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+const verifyToken = (req, res, next)=>{
+  const jwtToken = req?.headers.authorization;
+  if(!jwtToken){
+    return res.status(401).json({message:"Unauthorize"})
+  }
+  const token =jwtToken.split(" ")[1]
+
+  console.log(token);
+}
 
 async function run() {
   try {
@@ -110,7 +119,6 @@ async function run() {
       const id = req.params.id;
       const updateData = req.body;
 
-
       const filter = {
         _id: new ObjectId(id),
       };
@@ -139,10 +147,8 @@ async function run() {
       res.send(result);
     });
 
-
-
     // Delete Doctor
-        app.delete("/api/doctorCreate/:id", async (req, res) => {
+    app.delete("/api/doctorCreate/:id", async (req, res) => {
       try {
         const id = req.params.id;
 
@@ -159,90 +165,82 @@ async function run() {
       }
     });
 
-// Doctor Details
-app.get("/api/findDoctors/:id",async(req,res)=>{
-  const {id}=req.params
-  const result = await doctorProfileFormCollection.findOne({_id: new ObjectId(id)})
-  res.json(result)
-})
+    // Doctor Details
+    app.get("/api/findDoctors/:id",verifyToken, async (req, res) => {
 
-
-// appointment
-app.post("/api/appointments", async (req, res) => {
-  const appointment = req.body;
-  const newAppointment ={
-    ...appointment,
-    createdAt: new Date(),
-  }
-
-  const result = await doctorAppointmentCollection.insertOne(newAppointment);
-
-  res.send(result);
-});
-
-// Appointment List
-// app.get("/api/appointmentRequests", async (req, res) => {
-//   const query = {};
-
-//   const result = await doctorAppointmentCollection
-//     .find(query)
-//     .toArray();
-
-//   res.send(result);
-// });
-app.get("/api/appointmentRequests", async (req, res) => {
-  const result = await doctorAppointmentCollection.find().toArray();
-  res.send(result);
-});
-
-
-// Accept and Reject
-app.patch("/api/appointmentRequests/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    const filter = {
-      _id: new ObjectId(id),
-    };
-
-    const updateDoc = {
-      $set: {
-        status,
-        updatedAt: new Date(),
-      },
-    };
-
-    const result = await doctorAppointmentCollection.updateOne(
-      filter,
-      updateDoc
-    );
-
-    res.send(result);
-  } catch (error) {
-    console.error(error);
-
-    res.status(500).send({
-      success: false,
-      message: "Failed to update appointment status.",
+      const { id } = req.params;
+      const result = await doctorProfileFormCollection.findOne({
+        _id: new ObjectId(id),
+      });
+      res.json(result);
     });
-  }
-});
-// Completed
 
-app.get("/api/appointmentComplete", async (req, res) => {
-  try {
-    const result = await doctorAppointmentCollection
-      .find({ status: "completed" })
-      .toArray();
+    // appointment
+    app.post("/api/appointments", async (req, res) => {
+      const appointment = req.body;
+      const newAppointment = {
+        ...appointment,
+        createdAt: new Date(),
+      };
 
-    res.send(result);
-  } catch (error) {
-    res.status(500).send({
-      message: "Failed to fetch completed appointments",
+      const result =
+        await doctorAppointmentCollection.insertOne(newAppointment);
+
+      res.send(result);
     });
-  }
-});
+
+    app.get("/api/appointmentRequests", async (req, res) => {
+      const result = await doctorAppointmentCollection.find().toArray();
+      res.send(result);
+    });
+
+    // Accept and Reject
+    app.patch("/api/appointmentRequests/:id", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const filter = {
+          _id: new ObjectId(id),
+        };
+
+        const updateDoc = {
+          $set: {
+            status,
+            updatedAt: new Date(),
+          },
+        };
+
+        const result = await doctorAppointmentCollection.updateOne(
+          filter,
+          updateDoc,
+        );
+
+        res.send(result);
+      } catch (error) {
+        console.error(error);
+
+        res.status(500).send({
+          success: false,
+          message: "Failed to update appointment status.",
+        });
+      }
+    });
+    // Completed
+
+    app.get("/api/appointmentComplete", async (req, res) => {
+      try {
+        const result = await doctorAppointmentCollection
+          .find({ status: "completed" })
+          .toArray();
+
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({
+          message: "Failed to fetch completed appointments",
+        });
+      }
+    });
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
