@@ -23,24 +23,24 @@ const client = new MongoClient(uri, {
   },
 });
 const JWKS = createRemoteJWKSet(
-  new URL(`${process.env.NEXT_PUBLIC_URL}/api/auth/jwks`)
-)
-const verifyToken =async (req, res, next)=>{
+  new URL(`${process.env.NEXT_PUBLIC_URL}/api/auth/jwks`),
+);
+const verifyToken = async (req, res, next) => {
   const jwtToken = req?.headers.authorization;
-  if(!jwtToken){
-    return res.status(401).json({message:"Unauthorize"})
+  if (!jwtToken) {
+    return res.status(401).json({ message: "Unauthorize" });
   }
-  const token =jwtToken.split(" ")[1]
-try{
-    const {payload} = await jwtVerify(token,JWKS)
-  console.log(payload);
-  next()
-}catch(error){
-  return res.status(403).json({
-    message:"Forbidden"
-  })
-}
-}
+  const token = jwtToken.split(" ")[1];
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    console.log(payload);
+    next();
+  } catch (error) {
+    return res.status(403).json({
+      message: "Forbidden",
+    });
+  }
+};
 
 async function run() {
   try {
@@ -177,8 +177,7 @@ async function run() {
     });
 
     // Doctor Details
-    app.get("/api/findDoctors/:id",verifyToken, async (req, res) => {
-
+    app.get("/api/findDoctors/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await doctorProfileFormCollection.findOne({
         _id: new ObjectId(id),
@@ -249,6 +248,30 @@ async function run() {
       } catch (error) {
         res.status(500).send({
           message: "Failed to fetch completed appointments",
+        });
+      }
+    });
+
+    // Admin doctor manage
+    app.get("/api/manageDoctors", async (req, res) => {
+      const result = await doctorProfileFormCollection.find().toArray();
+      res.send(result);
+    });
+
+    //Admin doctor delete
+    app.delete("/api/manageDoctors/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+
+        const result = await doctorProfileFormCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
         });
       }
     });
