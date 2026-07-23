@@ -54,6 +54,8 @@ async function run() {
     const doctorAppointmentCollection =
       database.collection("doctorAppointment");
 
+    const usersCollection =  database.collection("user");
+
     // Manage Schedule
     // Add Schedule
     app.post("/api/manageSchedule", async (req, res) => {
@@ -276,6 +278,31 @@ async function run() {
       }
     });
 
+
+
+    // Admin user manage
+    app.get("/api/managesUsers", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      res.send(result);
+    });
+
+    // Admin user delete
+        app.delete("/api/managesUsers/:id", async (req, res) => {
+      try {
+        const id = req.params.id;
+
+        const result = await usersCollection.deleteOne({
+          _id: new ObjectId(id),
+        });
+
+        res.send(result);
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log(
