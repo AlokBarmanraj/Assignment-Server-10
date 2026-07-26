@@ -303,6 +303,69 @@ async function run() {
         });
       }
     });
+
+    // Patient appointment list
+        app.get("/api/appointmentHistory", async (req, res) => {
+      const result = await doctorAppointmentCollection.find().toArray();
+      res.send(result);
+    });
+
+    // Patient appointment cancel
+    app.patch("/api/appointmentHistory/:id/cancel", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await doctorAppointmentCollection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          status: "Cancelled",
+          cancelledAt: new Date(),
+        },
+      }
+    );
+
+    res.send({
+      success: true,
+      message: "Appointment cancelled successfully.",
+      result,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+// Appointment reschedule
+app.patch("/api/appointmentHistory/:id/reschedule", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { appointmentDate, appointmentTime } = req.body;
+
+    const result = await doctorAppointmentCollection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          appointmentDate,
+          appointmentTime,
+          status: "Rescheduled",
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    res.send({
+      success: true,
+      message: "Appointment rescheduled successfully.",
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log(
