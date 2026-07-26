@@ -54,7 +54,11 @@ async function run() {
     const doctorAppointmentCollection =
       database.collection("doctorAppointment");
 
-    const usersCollection =  database.collection("user");
+    const usersCollection = database.collection("user");
+    // ///////
+    const prescriptionCollection =
+  database.collection("prescriptions");
+  // /////
 
     // Manage Schedule
     // Add Schedule
@@ -278,8 +282,6 @@ async function run() {
       }
     });
 
-
-
     // Admin user manage
     app.get("/api/managesUsers", async (req, res) => {
       const result = await usersCollection.find().toArray();
@@ -287,7 +289,7 @@ async function run() {
     });
 
     // Admin user delete
-        app.delete("/api/managesUsers/:id", async (req, res) => {
+    app.delete("/api/managesUsers/:id", async (req, res) => {
       try {
         const id = req.params.id;
 
@@ -305,67 +307,94 @@ async function run() {
     });
 
     // Patient appointment list
-        app.get("/api/appointmentHistory", async (req, res) => {
+    app.get("/api/appointmentHistory", async (req, res) => {
       const result = await doctorAppointmentCollection.find().toArray();
       res.send(result);
     });
 
     // Patient appointment cancel
     app.patch("/api/appointmentHistory/:id/cancel", async (req, res) => {
+      try {
+        const { id } = req.params;
+
+        const result = await doctorAppointmentCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              status: "Cancelled",
+              cancelledAt: new Date(),
+            },
+          },
+        );
+
+        res.send({
+          success: true,
+          message: "Appointment cancelled successfully.",
+          result,
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+    // Appointment reschedule
+    app.patch("/api/appointmentHistory/:id/reschedule", async (req, res) => {
+      try {
+        const { id } = req.params;
+        const { appointmentDate, appointmentTime } = req.body;
+
+        const result = await doctorAppointmentCollection.updateOne(
+          { _id: new ObjectId(id) },
+          {
+            $set: {
+              appointmentDate,
+              appointmentTime,
+              status: "Rescheduled",
+              updatedAt: new Date(),
+            },
+          },
+        );
+
+        res.send({
+          success: true,
+          message: "Appointment rescheduled successfully.",
+        });
+      } catch (error) {
+        res.status(500).send({
+          success: false,
+          message: error.message,
+        });
+      }
+    });
+
+    // ///////
+    app.get("/api/appointmentRequests/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = await doctorAppointmentCollection.updateOne(
-      { _id: new ObjectId(id) },
-      {
-        $set: {
-          status: "Cancelled",
-          cancelledAt: new Date(),
-        },
-      }
-    );
-
-    res.send({
-      success: true,
-      message: "Appointment cancelled successfully.",
-      result,
+    const result = await doctorAppointmentCollection.findOne({
+      _id: new ObjectId(id),
     });
+
+    res.send(result);
   } catch (error) {
     res.status(500).send({
-      success: false,
       message: error.message,
     });
   }
 });
-// Appointment reschedule
-app.patch("/api/appointmentHistory/:id/reschedule", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { appointmentDate, appointmentTime } = req.body;
+// 
+app.post("/api/prescriptions", async (req, res) => {
+  const prescription = req.body;
 
-    const result = await doctorAppointmentCollection.updateOne(
-      { _id: new ObjectId(id) },
-      {
-        $set: {
-          appointmentDate,
-          appointmentTime,
-          status: "Rescheduled",
-          updatedAt: new Date(),
-        },
-      }
-    );
+  const result =
+    await prescriptionCollection.insertOne(prescription);
 
-    res.send({
-      success: true,
-      message: "Appointment rescheduled successfully.",
-    });
-  } catch (error) {
-    res.status(500).send({
-      success: false,
-      message: error.message,
-    });
-  }
+  res.send(result);
 });
+
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
     console.log(
