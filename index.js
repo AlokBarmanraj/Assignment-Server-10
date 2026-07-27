@@ -55,6 +55,7 @@ async function run() {
       database.collection("doctorAppointment");
 
     const usersCollection = database.collection("user");
+
     // ///////
     const prescriptionCollection =
   database.collection("prescriptions");
@@ -386,13 +387,96 @@ async function run() {
   }
 });
 // 
+// app.post("/api/prescriptions", async (req, res) => {
+//   const prescription = req.body;
+
+//   const result =
+//     await prescriptionCollection.insertOne(prescription);
+
+//   res.send(result);
+// });
 app.post("/api/prescriptions", async (req, res) => {
-  const prescription = req.body;
+  try {
+    const prescription = req.body;
 
-  const result =
-    await prescriptionCollection.insertOne(prescription);
+    // Prescription Save
+    const prescriptionResult =
+      await prescriptionCollection.insertOne({
+        ...prescription,
+        createdAt: new Date(),
+      });
 
-  res.send(result);
+    // Appointment Status Update
+    const appointmentResult =
+      await doctorAppointmentCollection.updateOne(
+        {
+          _id: new ObjectId(prescription.appointmentId),
+        },
+        {
+          $set: {
+            status: "Completed",
+            completedAt: new Date(),
+          },
+        }
+      );
+
+    res.send({
+      success: true,
+      prescriptionResult,
+      appointmentResult,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+
+// ////
+// prescription
+app.get("/api/prescription", async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).send({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    console.log("Logged User Email:", email);
+
+
+    const prescriptions = await prescriptionCollection
+      .find({
+        patientEmail: email,
+      })
+      .sort({
+        createdAt: -1,
+      })
+      .toArray();
+
+
+    console.log("Prescription Found:", prescriptions);
+
+
+    res.send({
+      success: true,
+      data: prescriptions,
+    });
+
+
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).send({
+      success: false,
+      message: error.message,
+    });
+  }
 });
 
     // Send a ping to confirm a successful connection
